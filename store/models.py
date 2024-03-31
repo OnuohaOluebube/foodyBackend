@@ -1,12 +1,19 @@
+from typing import Iterable
 from django.db import models
 from uuid import uuid4
 import datetime
 from datetime import timezone
 
-class Category(models.Model):
+class Collection(models.Model):
     id = models.UUIDField(default=uuid4, editable=False,
                           unique=True, primary_key=True)
     title = models.CharField(max_length = 255)
+
+    def save(self, force_insert: bool = ..., force_update: bool = ..., using: str | None = ..., update_fields: Iterable[str] | None = ...) -> None:
+        if not self.id:
+            self.id = uuid4()
+        return super(Collection,self).save(force_insert, force_update, using, update_fields)
+
 
 
 class Promotion(models.Model):
@@ -19,12 +26,12 @@ class Promotion(models.Model):
                           unique=True, primary_key=True)
     description = models.TextField()
     discount = models.FloatField()
-    start_date = models.DateTimeField(default = datetime.now)
+    start_date = models.DateTimeField(default = datetime.datetime.now)
     end_date = models.DateTimeField(null = True)
     paused = models.BooleanField(default=False)
     def status(self):
-        expired = self.end_date and self.end_date < datetime.now(timezone.utc)
-        pending = self.start_date > datetime.now(timezone.utc)
+        expired = self.end_date and self.end_date < datetime.datetime.now(timezone.utc)
+        pending = self.start_date > datetime.datetime.now(timezone.utc)
 
         if expired:
             return self.ENDED
@@ -45,9 +52,10 @@ class Product(models.Model):
     title = models.CharField(max_length = 255)
     unit_price = models.DecimalField(max_digits= 6, decimal_places = 2)
     description = models.TextField()
-    category = models.ForeignKey(Category, on_delete = models.PROTECT)
+    collection = models.ForeignKey(Collection, on_delete = models.PROTECT)
     inventory = models.IntegerField()
     last_updated = models.DateTimeField(auto_now_add = True)
+    quantity = models.PositiveSmallIntegerField()
     promotions = models.ManyToManyField(Promotion)
 
 
@@ -64,7 +72,7 @@ class Address(models.Model):
                           unique=True, primary_key=True)
 
     customer = models.ForeignKey(
-        Customer, null=False, on_delete=models.CASCADE, related_name="addresses")
+        Customer, null=False, on_delete = models.CASCADE, related_name="addresses")
     is_shipping = models.BooleanField(default=False)
     is_default = models.BooleanField(default=False)
     street1 = models.CharField(max_length=100, null=True)
@@ -75,14 +83,6 @@ class Address(models.Model):
     country_code = models.CharField(max_length=3, null=True)
 
     
-class Customer(models.Model):
-    id = models.UUIDField(default=uuid4, editable=False,
-                          unique=True, primary_key=True)
-    firstname = models.CharField(max_length = 255)
-    lastname = models.CharField(max_length = 255)
-    phone = models.CharField(max_length = 255)
-    email = models.EmailField()
-
 
 class Order(models.Model):
     id = models.UUIDField(default=uuid4, editable=False,
@@ -102,13 +102,13 @@ class Order(models.Model):
         default=PENDING,
     )
     placed_at = models.DateTimeField(auto_now_add = True)
-    customer = models.ForeignKey(Customer, on_Delete = models.PROTECT)
+    customer = models.ForeignKey(Customer, on_delete = models.PROTECT)
 
 class OrderItem(models.Model):
     id = models.UUIDField(default=uuid4, editable=False,
                           unique=True, primary_key=True)
-    product = models.ForeignKey(Product, onDelete = models.PROTECT)
-    order = models.ForeignKey(Order, onDelete = models.PROTECT)
+    product = models.ForeignKey(Product, on_delete = models.PROTECT)
+    order = models.ForeignKey(Order, on_delete = models.PROTECT)
     quantity= models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits= 6, decimal_places = 2)
 
@@ -118,8 +118,8 @@ class Cart(models.Model):
 class CartItem(models.Model):
     id = models.UUIDField(default=uuid4, editable=False,
                           unique=True, primary_key=True)
-    product = models.ForeignKey(Product, onDelete = models.CASCADE)
-    cart = models.ForeignKey(Cart, onDelete = models.CASCADE)
+    product = models.ForeignKey(Product, on_delete = models.CASCADE)
+    cart = models.ForeignKey(Cart, on_delete = models.CASCADE)
     quantity= models.PositiveIntegerField()
  
 

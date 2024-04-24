@@ -1,20 +1,17 @@
-from typing import Iterable
 from django.db import models
 from uuid import uuid4
 import datetime
 from datetime import timezone
+from django.conf import settings
+from django.contrib import admin
+
 
 class Collection(models.Model):
     id = models.UUIDField(default=uuid4, editable=False,
                           unique=True, primary_key=True)
     title = models.CharField(max_length = 255)
-
-    def save(self, force_insert: bool = ..., force_update: bool = ..., using: str | None = ..., update_fields: Iterable[str] | None = ...) -> None:
-        if not self.id:
-            self.id = uuid4()
-        return super(Collection,self).save(force_insert, force_update, using, update_fields)
-
-
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at =models.DateTimeField(auto_now=True)
 
 class Promotion(models.Model):
     PENDING = "pending"
@@ -52,20 +49,39 @@ class Product(models.Model):
     title = models.CharField(max_length = 255)
     unit_price = models.DecimalField(max_digits= 6, decimal_places = 2)
     description = models.TextField()
-    collection = models.ForeignKey(Collection, on_delete = models.PROTECT)
-    inventory = models.IntegerField()
-    last_updated = models.DateTimeField(auto_now_add = True)
-    quantity = models.PositiveSmallIntegerField()
-    promotions = models.ManyToManyField(Promotion)
+    collection = models.ForeignKey(Collection, on_delete = models.PROTECT, related_name='products')
+    quantity = models.FloatField()
+    # promotions = models.ManyToManyField(Promotion)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class Customer(models.Model):
     id = models.UUIDField(default=uuid4, editable=False,
                           unique=True, primary_key=True)
-    firstname = models.CharField(max_length = 255)
-    lastname = models.CharField(max_length = 255)
+    birth_day = models.DateField(null=True, blank=True)
     phone = models.CharField(max_length = 255)
-    email = models.EmailField()
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at =models.DateTimeField(auto_now=True)
+
+    @admin.display(ordering='user__first_name')
+    def first_name(self):
+        return self.user.first_name
+    
+    @admin.display(ordering='user__last_name')
+    def last_name(self):
+        return self.user.last_name
+
+
+    def __str__(self) -> str:
+        return f'{self.user.first_name} {self.user.last_name}'
+    
+    class Meta:
+        ordering = ['user__first_name', 'user__last_name']
+        permissions = [
+            ('view_history', 'Can view history')
+        ]
 
 class Address(models.Model):
     id = models.UUIDField(default=uuid4, editable=False,
@@ -81,6 +97,8 @@ class Address(models.Model):
     state = models.CharField(max_length=100, null=True)
     postal_code = models.CharField(max_length=100, null=True)
     country_code = models.CharField(max_length=3, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at =models.DateTimeField(auto_now=True)
 
     
 
@@ -101,26 +119,50 @@ class Order(models.Model):
         choices=PAYMENT_STATUS_CHOICES,
         default=PENDING,
     )
-    placed_at = models.DateTimeField(auto_now_add = True)
     customer = models.ForeignKey(Customer, on_delete = models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at =models.DateTimeField(auto_now=True)
 
 class OrderItem(models.Model):
     id = models.UUIDField(default=uuid4, editable=False,
                           unique=True, primary_key=True)
     product = models.ForeignKey(Product, on_delete = models.PROTECT)
-    order = models.ForeignKey(Order, on_delete = models.PROTECT)
+    order = models.ForeignKey(Order, on_delete = models.PROTECT, related_name='items')
     quantity= models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits= 6, decimal_places = 2)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at =models.DateTimeField(auto_now=True)
 
 class Cart(models.Model):
-    created_at = models.DateTimeField(auto_now_add = True)
+    id = models.UUIDField(default=uuid4, editable=False,
+                          unique=True, primary_key=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at =models.DateTimeField(auto_now=True)
+
+
 
 class CartItem(models.Model):
     id = models.UUIDField(default=uuid4, editable=False,
                           unique=True, primary_key=True)
     product = models.ForeignKey(Product, on_delete = models.CASCADE)
-    cart = models.ForeignKey(Cart, on_delete = models.CASCADE)
+    cart = models.ForeignKey(Cart, on_delete = models.CASCADE, related_name='items')
     quantity= models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at =models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [['cart', 'product']]
+
+class Review(models.Model):
+    id = models.UUIDField(default=uuid4, editable=False,
+                          unique=True, primary_key=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    name = models.CharField(max_length=20, null=True)
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
  
 
 

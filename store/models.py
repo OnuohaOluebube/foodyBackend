@@ -56,6 +56,13 @@ class Product(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
+class ProductImage(models.Model):
+    id = models.UUIDField(default=uuid4, editable=False,
+                          unique=True, primary_key=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to ='store/images')
+
+
 class Customer(models.Model):
     id = models.UUIDField(default=uuid4, editable=False,
                           unique=True, primary_key=True)

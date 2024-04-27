@@ -112,6 +112,16 @@ class OrderViewSet(viewsets.ModelViewSet):
         return serializers.OrderSerializer
     
 
+class ProductImageViewSet(viewsets.ModelViewSet):
+    def get_queryset(self):
+        return models.ProductImage.objects.filter(product_id = self.kwargs['product_pk'])
+    serializer_class = serializers.ProductImageSerializer
+    def get_serializer_context(self):
+        return {'product_id' : self.kwargs['product_pk']}
+   
+
+    
+
     
 
 

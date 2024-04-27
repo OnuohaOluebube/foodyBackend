@@ -10,11 +10,23 @@ class CollectionSerializer(serializers.ModelSerializer):
         model = models.Collection
         fields = ['id', 'title', 'product_count', 'created_at']
 
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.ProductImage
+        fields = ['id', 'image']
+
+    def create(self, validated_data):
+        product_id = self.context['product_id']
+        return models.ProductImage.objects.create(product_id = product_id, **validated_data)
+
+
+
 class ProductSerializer(serializers.ModelSerializer):
     review_count = serializers.IntegerField(read_only = True)
+    images = ProductImageSerializer(many = True, read_only = True)
     class Meta:
         model = models.Product
-        fields = ['id', 'title', 'unit_price', 'description','quantity', 'collection','review_count']
+        fields = ['id', 'title', 'unit_price', 'description','quantity', 'collection','review_count', 'images']
 
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:

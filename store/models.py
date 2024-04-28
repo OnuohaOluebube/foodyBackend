@@ -5,6 +5,8 @@ from datetime import timezone
 from django.conf import settings
 from django.contrib import admin
 
+from store.validators import validate_file_size
+
 
 class Collection(models.Model):
     id = models.UUIDField(default=uuid4, editable=False,
@@ -60,7 +62,7 @@ class ProductImage(models.Model):
     id = models.UUIDField(default=uuid4, editable=False,
                           unique=True, primary_key=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to ='store/images')
+    image = models.ImageField(upload_to ='store/images', validators=[validate_file_size])
 
 
 class Customer(models.Model):
